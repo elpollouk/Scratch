@@ -9,6 +9,27 @@
   var pathEnd = null;
   var grid = [];
 
+  function enqueue(q, item, priority) {
+    for (var i = 0; i < q.length; i++) {
+      if (q[i].priority >= priority) {
+        q.splice(i, 0, {
+          priority: priority,
+          item: item
+        });
+        return;
+      }
+    }
+
+    q.push({
+      priority: priority,
+      item: item
+    });
+  }
+
+  function dequeue(q) {
+    return q.shift().item;
+  }
+
   function isWall(target) {
     return !!target.isWall;
   }
@@ -32,6 +53,7 @@
       gridObj.isChecked = false;
       gridObj.element.classList.remove("checked");
       gridObj.element.classList.remove("path");
+      gridObj.element.innerText = "";
     }
   }
 
@@ -105,26 +127,49 @@
   }
 
   function checkAndAddChild(children, target) {
-    if (!isChecked(target) && !isWall(target))
+    if (!isWall(target))
       children.push(target);
   }
 
   function getUncheckedChildren(target) {
     var children = [];
     var gridId = target.gridId;
-    if (target.y > 0)
-      checkAndAddChild(children, grid[gridId - WIDTH]);
     
-    if (target.x > 0)
-      checkAndAddChild(children, grid[gridId - 1]);
+    if ((target.y % 2) + (target.x % 2) == 1)
+    {
+      if (target.y > 0)
+        checkAndAddChild(children, grid[gridId - WIDTH]);
+    
+      if (target.y < (HEIGHT - 1))
+        checkAndAddChild(children, grid[gridId + WIDTH]);
 
-    if (target.x < (WIDTH - 1))
-      checkAndAddChild(children, grid[gridId + 1]);
+      if (target.x > 0)
+        checkAndAddChild(children, grid[gridId - 1]);
 
-    if (target.y < (HEIGHT - 1))
-      checkAndAddChild(children, grid[gridId + WIDTH]);
+      if (target.x < (WIDTH - 1))
+        checkAndAddChild(children, grid[gridId + 1]);
+    }
+    else {
+      if (target.x > 0)
+        checkAndAddChild(children, grid[gridId - 1]);
 
+      if (target.x < (WIDTH - 1))
+        checkAndAddChild(children, grid[gridId + 1]);
+    
+      if (target.y > 0)
+        checkAndAddChild(children, grid[gridId - WIDTH]);
+    
+      if (target.y < (HEIGHT - 1))
+        checkAndAddChild(children, grid[gridId + WIDTH]);
+    }
+  
     return children;
+  }
+
+  function distanceBetween(a, b) {
+    var dX = Math.abs(a.x - b.x);
+    var dY = Math.abs(a.y - b.y);
+    return dX + dY;
   }
 
   function findPath() {
@@ -132,19 +177,28 @@
 
     if (!pathStart || !pathEnd) return;
 
-    var queue = [pathStart];
     var path = {};
-    setChecked(pathStart);
+    var queue = [];
+    var costSoFar = {};
+
+    enqueue(queue, pathStart, 0);
+    costSoFar[pathStart.gridId] = 0;
 
     while (queue.length != 0) {
-      var current = queue.shift();
+      var current = dequeue(queue);
       if (current === pathEnd) break;
-
+    
       var children = getUncheckedChildren(current);
       for (var i = 0; i < children.length; i++) {
-        setChecked(children[i]);
-        queue.push(children[i]);
-        path[children[i].gridId] = current;
+        var child = children[i];
+        var newCost = costSoFar[current.gridId] + 1;
+        if (!(child.gridId in costSoFar) || newCost < costSoFar[child.gridId]) {
+          costSoFar[child.gridId] = newCost;
+          enqueue(queue, child, newCost + distanceBetween(child, pathEnd));
+          setChecked(child);
+          path[child.gridId] = current;
+          //child.element.innerText = "" + newCost + "/" + distanceBetween(child, pathEnd);
+        }
       }
     }
 
