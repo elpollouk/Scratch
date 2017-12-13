@@ -9,38 +9,11 @@
   var pathEnd = null;
   var grid = [];
 
-  function enqueue(q, item, priority) {
-    for (var i = 0; i < q.length; i++) {
-      if (q[i].priority >= priority) {
-        q.splice(i, 0, {
-          priority: priority,
-          item: item
-        });
-        return;
-      }
-    }
-
-    q.push({
-      priority: priority,
-      item: item
-    });
-  }
-
-  function dequeue(q) {
-    return q.shift().item;
-  }
-
-  function isWall(target) {
-    return !!target.isWall;
-  }
-
-  function isChecked(target) {
-    return !!target.isChecked;
-  }
-
+  //---------------------------------------------------------------------------------------------//
+  // UI Manipulation and grid
+  //---------------------------------------------------------------------------------------------//
   function setChecked(target) {
     target.element.classList.add("checked");
-    target.isChecked = true;
   }
 
   function setPath(target) {
@@ -50,7 +23,6 @@
   function clearPath() {
     for (var i = 0; i < grid.length; i++) {
       var gridObj = grid[i];
-      gridObj.isChecked = false;
       gridObj.element.classList.remove("checked");
       gridObj.element.classList.remove("path");
       gridObj.element.innerText = "";
@@ -58,7 +30,7 @@
   }
 
   function placeStartEnd(target) {
-    if (!isWall(target)) {
+    if (!target.isWall) {
       if (placeStart) {
         if (pathStart)
           pathStart.element.classList.remove("start");
@@ -79,7 +51,7 @@
   }
 
   function toggleWall(target) {
-    if (isWall(target))
+    if (target.isWall)
       target.element.classList.remove("wall");
     else
       target.element.classList.add("wall");
@@ -113,7 +85,6 @@
 
         gridObj.gridId = gridId++;
         gridObj.element = square;
-        gridObj.isChecked = false;
         gridObj.isWall = false;
         gridObj.x = x;
         gridObj.y = y;
@@ -126,15 +97,46 @@
     }
   }
 
+
+  //---------------------------------------------------------------------------------------------//
+  // Priority Queue
+  //---------------------------------------------------------------------------------------------//
+  function enqueue(q, item, priority) {
+    for (var i = 0; i < q.length; i++) {
+      if (q[i].priority >= priority) { // >= is important for A*. Using just > will lead to a much large problem space search
+        q.splice(i, 0, {
+          priority: priority,
+          item: item
+        });
+        return;
+      }
+    }
+
+    q.push({
+      priority: priority,
+      item: item
+    });
+  }
+
+  function dequeue(q) {
+    return q.shift().item;
+  }
+
+
+  //---------------------------------------------------------------------------------------------//
+  // A*
+  //---------------------------------------------------------------------------------------------//
   function checkAndAddChild(children, target) {
-    if (!isWall(target))
+    if (!target.isWall)
       children.push(target);
   }
 
-  function getUncheckedChildren(target) {
+  function getValidChildren(target) {
     var children = [];
     var gridId = target.gridId;
     
+    // By alternating between favouring x first vs y first, we get more pleasing paths rather than simple L shaped paths
+    // The path distances still come out the same
     if ((target.y % 2) + (target.x % 2) == 1)
     {
       if (target.y > 0)
@@ -188,7 +190,7 @@
       var current = dequeue(queue);
       if (current === pathEnd) break;
     
-      var children = getUncheckedChildren(current);
+      var children = getValidChildren(current);
       for (var i = 0; i < children.length; i++) {
         var child = children[i];
         var newCost = costSoFar[current.gridId] + 1;
@@ -213,6 +215,10 @@
     }
   }
 
+
+  //---------------------------------------------------------------------------------------------//
+  // The rest
+  //---------------------------------------------------------------------------------------------//
   function main() {
     buildGrid(WIDTH, HEIGHT);
   }
