@@ -104,32 +104,25 @@
     }
   }
 
+  function checkAndAddChild(children, target) {
+    if (!isChecked(target) && !isWall(target))
+      children.push(target);
+  }
+
   function getUncheckedChildren(target) {
     var children = [];
     var gridId = target.gridId;
-    if (gridId >= WIDTH) {
-      var up = grid[gridId - WIDTH];
-      if (!isChecked(up) && !isWall(up))
-        children.push(up);
-    }
+    if (target.y > 0)
+      checkAndAddChild(children, grid[gridId - WIDTH]);
+    
+    if (target.x > 0)
+      checkAndAddChild(children, grid[gridId - 1]);
 
-    if ((gridId % WIDTH) > 0) {
-      var left = grid[gridId - 1];
-      if (!isChecked(left) && !isWall(left))
-        children.push(left);
-    }
+    if (target.x < (WIDTH - 1))
+      checkAndAddChild(children, grid[gridId + 1]);
 
-    if ((gridId % WIDTH) < (WIDTH - 1)) {
-      var right = grid[gridId + 1];
-      if (!isChecked(right) && !isWall(right))
-        children.push(right);
-    }
-
-    if (gridId < (WIDTH * (HEIGHT - 1))) {
-      var down = grid[gridId + WIDTH];
-      if (!isChecked(down) && !isWall(down))
-        children.push(down);
-    }
+    if (target.y < (HEIGHT - 1))
+      checkAndAddChild(children, grid[gridId + WIDTH]);
 
     return children;
   }
